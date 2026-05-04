@@ -1,0 +1,6 @@
+# RunePulse Ignore
+*.bin
+*.exe
+rune_pulse
+out/
+.odin/
