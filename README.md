@@ -1,1 +1,71 @@
-🏗️ Pillar 1: The Data (State & Entities)In RunePulse, everything is Data-First. Instead of objects that "do" things, you have data that the engine "processes."The State: Think of this as the "Central Brain." It holds the SDL window, the timer (Delta Time), and the master list of everything in the world.The Entities: These are just rows in a spreadsheet. Each row has a position, a velocity, and a shape (vertices).Inactive entities are ignored.Active entities are pulled into the physics and rendering systems every single frame.🔄 Pillar 2: The Lifecycle (The "Heartbeat")The framework follows a strict, repeating cycle. If a user understands this loop, they understand the engine.Input Collection: The engine captures the keyboard state. It remembers what was pressed last frame so it can tell if you just tapped a key or are holding it down.User Update (Your Turn): This is the only part the user usually touches. You look at the Input and change the Velocity of your entities.Physics Resolution (SAT): The engine takes those velocities, moves the entities, and checks for overlaps.Crucial Concept: The Separating Axis Theorem (SAT). Imagine shining a flashlight on two shapes from different angles. If you ever see a gap in their shadows, they aren't touching. If there’s never a gap, they are colliding, and the engine pushes them apart.Render: The engine looks at the final positions and draws the polygons.🎮 Pillar 3: The Logic (How to Code)To code in RunePulse, you follow a "Set and Forget" pattern:Initialization: You "wake up" an entity by setting active = true and defining its vertices. You do this once at the start.The Loop: You don't "move" the player; you set their velocity.Bad logic: player.pos.x += 5 (This skips physics checks).Good logic: player.vel.x = 500 (The engine will move it and stop it if it hits a wall).📋 The "New User" Mental ModelIf I were a new user reading your GitHub, I would want to see this Cheat Sheet:If I want to...I should...Create a characterFind an empty state.entities slot and set active = true.Make a wallSet an entity's type to .Solid.Move somethingChange its vel (Velocity) inside the main loop.Detect a hitLet the engine handle it; if collides is set, it happens automatically.Check a tapUse is_key_pressed() instead of is_key_down().
+# 🌀 RunePulse Engine
+**A Genre-Agnostic 2D Engine Template for Odin + SDL3.**
+
+RunePulse is designed for developers who want a "Scenario-Proof" foundation. It handles the complex math of polygon collisions and input buffering, leaving you free to define the rules of your world.
+
+---
+
+## 🧠 The Mental Model
+To master RunePulse, you must understand how data flows through the engine. You don't "create" objects; you **activate** data slots.
+
+### 1. The "Parking Lot" (Entity Management)
+The engine pre-allocates **1,024 slots** for entities. 
+*   **Inactive Slots:** The engine ignores these. They cost zero processing power.
+*   **Active Slots:** When you set `active = true`, the engine pulls that slot into the Physics and Render systems.
+
+
+
+### 2. The "Assembly Line" (Game Loop)
+Every frame (calculated via Delta Time `dt`) follows this order:
+1.  **Input:** The engine captures what keys are being pressed or tapped.
+2.  **Your Logic:** This is the ONLY part you edit. You change the `velocity` of entities based on input.
+3.  **Physics (SAT):** The engine moves entities and resolves collisions.
+4.  **Render:** The engine draws the final positions to the screen.
+
+---
+
+## 🛠️ Data Reference
+
+### Entity Properties
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `active` | `bool` | Must be `true` to exist in the world. |
+| `pos` | `[2]f32` | The center/anchor point of the entity. |
+| `vel` | `[2]f32` | Speed in pixels per second. **Always multiply by `dt`!** |
+| `vertices` | `[dynamic]` | The points that form the shape (must be convex). |
+| `type` | `Enum` | Set to `.Solid` to make it a physical wall. |
+
+---
+
+## ⚡ The Physics: SAT Collision
+RunePulse uses **Separating Axis Theorem (SAT)**. Imagine shining a flashlight on two shapes from different angles. If there is ever a gap in their shadows, they are not touching. If no gap exists on any axis, the engine pushes them apart.
+
+
+
+**The Rule:** Your polygons must be **convex** (no "dents" or "caves" in the shape).
+
+---
+
+## ⌨️ Input System
+| Function | Use Case |
+| :--- | :--- |
+| `is_key_down()` | Continuous movement (e.g., walking, thrusting). |
+| `is_key_pressed()` | Single actions (e.g., jumping, shooting, menus). |
+
+---
+
+## 🚀 Creating Your First Entity
+Add this to your "Initialize" section in `main.odin`:
+
+```odin
+// 1. Grab a slot
+p := &state.entities[0]
+p.active = true
+p.pos = {400, 300}
+p.color = {0.2, 0.8, 0.3, 1.0}
+
+// 2. Define the shape (a simple square)
+append(&p.vertices, [2]f32{-25, -25}, [2]f32{25, -25}, [2]f32{25, 25}, [2]f32{-25, 25})
+
+// 3. Move it (Inside the loop)
+if is_key_down(.D) do p.vel.x = 500
